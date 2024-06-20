@@ -22,13 +22,15 @@ namespace MinimapVehicleController
             right,
             hazard
         };
-        public static Keys CurrentWindowKey,PassengerWindowKey,DriverRearWindowKey,PassengerRearWindowKey,AllWindowsKey,HoodKey,TrunkKey,InteriorLightKey,ToggleRadioWheelKey,ToggleMobileRadioKey,ToggleMinimapKey,OpenDoorKey,SeatbeltKey,ShuffleSeatKey,LeftSignalKey, RightSignalKey, HazardsKey;
+        public static Keys CurrentWindowKey,PassengerWindowKey,DriverRearWindowKey,PassengerRearWindowKey,AllWindowsKey,HoodKey,TrunkKey,InteriorLightKey,ToggleRadioWheelKey,ToggleMobileRadioKey,ToggleMinimapKey,OpenDoorKey,SeatbeltKey,ShuffleSeatKey,LeftSignalKey, RightSignalKey, HazardsKey, RedLaserKey, GreenLaserKey;
         private readonly IniFile settingsINI;
         public static bool LightOff = true;
         public static bool MMoriginalEnabled, MMbigMapEnabled, MMzoomoutEnabled, MMfullEnabled, MMhiddenEnabled, enableVehicleControls, enableMinimapControls, enableMobileRadio, enablePhoneColor = true;
         public static bool leftSignalActive, rightSignalActive, hazardsActive, radioWheelDisabled, mobileRadio, beltedUp, isCurrentlyShuffling, window0down, window1down, window2down, window3down, AWindowDown, hoodOpen, trunkOpen, door0Open, door1Open, door2Open, door3Open, initialized = false;
         public static mapStates mapState = mapStates.original;
         public static int phoneColorIndex, MMsafetyVal = 0;
+        public static WeaponComponentHash laserhash = (WeaponComponentHash)2455710022;
+        public static WeaponComponentHash redlaserhash = (WeaponComponentHash)1073457922;
         public MinimapVehicleControllerMod(){
             if (!initialized){
                 this.settingsINI = new IniFile("scripts/MVC.ini");
@@ -65,6 +67,12 @@ namespace MinimapVehicleController
                     break;
                 case var value when value == ShuffleSeatKey:
                     if (enableVehicleControls) { ShuffleToNextSeat(Game.Player.Character.CurrentVehicle); }
+                    break;
+                case var value when value == RedLaserKey:
+                    ToggleLaser(true);
+                    break;
+                case var value when value == GreenLaserKey:
+                    ToggleLaser(false);
                     break;
             }
             if (Game.Player.Character.CurrentVehicle != null && enableVehicleControls) {
@@ -133,9 +141,12 @@ namespace MinimapVehicleController
             OpenDoorKey = settingsINI.Read<Keys>("OpenDoorKey", "KEYBINDS", Keys.Y);
             SeatbeltKey = settingsINI.Read<Keys>("SeatbeltKey", "KEYBINDS", Keys.U);
             ShuffleSeatKey = settingsINI.Read<Keys>("ShuffleSeatKey", "KEYBINDS", Keys.K);
-            LeftSignalKey = settingsINI.Read<Keys>("LeftSignalKey", "KEYBINDS", Keys.J);
-            RightSignalKey = settingsINI.Read<Keys>("RightSignalKey", "KEYBINDS", Keys.L);
-            HazardsKey = settingsINI.Read<Keys>("HazardsKey", "KEYBINDS", Keys.OemSemicolon);
+            LeftSignalKey = settingsINI.Read<Keys>("LeftSignalKey", "KEYBINDS", Keys.None);
+            RightSignalKey = settingsINI.Read<Keys>("RightSignalKey", "KEYBINDS", Keys.None);
+            HazardsKey = settingsINI.Read<Keys>("HazardsKey", "KEYBINDS", Keys.None);
+            RedLaserKey = settingsINI.Read<Keys>("RedLaserKey", "KEYBINDS", Keys.OemSemicolon);
+            GreenLaserKey = settingsINI.Read<Keys>("GreenLaserKey", "KEYBINDS", Keys.OemQuotes);
+
         }
         #region MINIMAP FUNCTIONS
         public static void MinimapSafetyCheck(){
@@ -412,14 +423,15 @@ namespace MinimapVehicleController
                 Function.Call(Hash.SET_PED_CAN_BE_KNOCKED_OFF_VEHICLE, veh, 1);
                 Function.Call(Hash.SET_PED_CONFIG_FLAG, Game.Player.Character, 32, false);
                 Function.Call(Hash.SET_PED_CAN_BE_DRAGGED_OUT, Game.Player.Character, false);
-                Notification.PostTicker("Seatbelt On", true);
+                Notification.Show("Seatbelt On");
             }
             else{
                 Function.Call(Hash.PLAY_SOUND, -1, "TOGGLE_ON", "HUD_FRONTEND_DEFAULT_SOUNDSET");
                 Function.Call(Hash.SET_PED_CAN_BE_KNOCKED_OFF_VEHICLE, veh, 0);
                 Function.Call(Hash.SET_PED_CONFIG_FLAG, Game.Player.Character, 32, true);
                 Function.Call(Hash.SET_PED_CAN_BE_DRAGGED_OUT, Game.Player.Character, true);
-                Notification.PostTicker("Seatbelt Off", true);
+                //Notification.PostTicker("Seatbelt Off", true); SHVDN4 PREVIEW
+                Notification.Show("Seatbelt Off");
                 beltedUp = false;
             }
         }
@@ -465,7 +477,7 @@ namespace MinimapVehicleController
                     Function.Call(Hash.SET_MOBILE_PHONE_RADIO_STATE, false);
                     Function.Call(Hash.SET_AUDIO_FLAG, "MobileRadioInGame", 0);
                     Function.Call(Hash.SET_AUDIO_FLAG, "AllowRadioDuringSwitch", 0);
-                    Notification.PostTicker("Mobile Radio Off", true);
+                    Notification.Show("Mobile Radio Off");
                     mobileRadio = false;
                     radioWheelDisabled = false;
                 }
@@ -473,7 +485,7 @@ namespace MinimapVehicleController
                     Function.Call(Hash.SET_MOBILE_PHONE_RADIO_STATE, true);
                     Function.Call(Hash.SET_AUDIO_FLAG, "MobileRadioInGame", 1);
                     Function.Call(Hash.SET_AUDIO_FLAG, "AllowRadioDuringSwitch", 1);
-                    Notification.PostTicker("Mobile Radio On", true);
+                    Notification.Show("Mobile Radio On");
                     mobileRadio = true;
                 }
             }
@@ -481,13 +493,26 @@ namespace MinimapVehicleController
         public static void ToggleRadioWheel(){
             if (radioWheelDisabled){
                 radioWheelDisabled = false;
-                Notification.PostTicker("Radio Wheel Enabled", true);
+                Notification.Show("Radio Wheel Enabled");
             }
             else{
                 radioWheelDisabled = true;
-                Notification.PostTicker("Radio Wheel Disabled", true);
+                Notification.Show("Radio Wheel Disabled");
             }
         }
         #endregion
+        public static void ToggleLaser(bool laserColor)
+        {
+            if (laserColor)
+            {
+                Weapon weapon = Game.Player.Character.Weapons.Current;
+                weapon.Components[laserhash].Active = !weapon.Components[laserhash].Active;
+            }
+            else
+            {
+                Weapon weapon = Game.Player.Character.Weapons.Current;
+                weapon.Components[redlaserhash].Active = !weapon.Components[redlaserhash].Active;
+            }
+        }
     }
 }
