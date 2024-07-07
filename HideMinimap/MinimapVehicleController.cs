@@ -29,8 +29,13 @@ namespace MinimapVehicleController
         public static bool leftSignalActive, rightSignalActive, hazardsActive, radioWheelDisabled, mobileRadio, beltedUp, isCurrentlyShuffling, window0down, window1down, window2down, window3down, AWindowDown, hoodOpen, trunkOpen, door0Open, door1Open, door2Open, door3Open, initialized = false;
         public static mapStates mapState = mapStates.original;
         public static int phoneColorIndex, MMsafetyVal = 0;
-        public static WeaponComponentHash laserhash = (WeaponComponentHash)2455710022;
-        public static WeaponComponentHash redlaserhash = (WeaponComponentHash)1073457922;
+        //LASER COMPONENT HASHES
+        public static WeaponComponentHash laserhash = (WeaponComponentHash)2455710022; //COMPONENT_AT_AR_LASER
+        public static WeaponComponentHash redlaserhash = (WeaponComponentHash)1073457922; //COMPONENT_AT_AR_LASER_RED
+        public static WeaponComponentHash laserhashREH = (WeaponComponentHash)2248128277; //COMPONENT_AT_AR_LASER_REH
+        public static WeaponComponentHash redlaserhashREH = (WeaponComponentHash)3620657966; //COMPONENT_AT_AR_LASER_RED_REH
+        public static WeaponComponentHash PIlaserhash = (WeaponComponentHash)1230280991; //COMPONENT_AT_PI_LASER
+        public static WeaponComponentHash PIlaserhashIR = (WeaponComponentHash)743205558; //COMPONENT_AT_PI_LASER_IR
         public MinimapVehicleControllerMod(){
             if (!initialized){
                 this.settingsINI = new IniFile("scripts/MVC.ini");
@@ -42,7 +47,20 @@ namespace MinimapVehicleController
             KeyDown += OnKeyDown;
         }
         private void OnTick(object sender, EventArgs e){
-            if (enablePhoneColor){Function.Call(Hash.SET_PLAYER_PHONE_PALETTE_IDX, Game.Player, phoneColorIndex);}
+            //PHONE COLOR
+            if (enablePhoneColor){
+                switch (Game.Player.Character.Model.Hash){
+                    case 225514697: //Player zero
+                        break;
+                    case -1692214353: //player_one
+                        break;
+                    case -1686040670: //player_two
+                        break;
+                    default:
+                        Function.Call(Hash.SET_PLAYER_PHONE_PALETTE_IDX, Game.Player, phoneColorIndex);
+                        break;
+                }
+            }
             if (mapState == mapStates.hidden){
                 Function.Call(Hash.HIDE_HUD_AND_RADAR_THIS_FRAME);
                 Function.Call(Hash.HIDE_HELP_TEXT_THIS_FRAME);
@@ -501,18 +519,26 @@ namespace MinimapVehicleController
             }
         }
         #endregion
+        #region LASER FUNCTIONS
         public static void ToggleLaser(bool laserColor)
         {
-            if (laserColor)
+            if (laserColor)//green
             {
                 Weapon weapon = Game.Player.Character.Weapons.Current;
+                //Notification.Show(weapon.Model.ToString());
                 weapon.Components[laserhash].Active = !weapon.Components[laserhash].Active;
+                weapon.Components[laserhashREH].Active = !weapon.Components[laserhashREH].Active;
+                weapon.Components[PIlaserhash].Active = !weapon.Components[PIlaserhash].Active;
             }
-            else
+            else//red
             {
                 Weapon weapon = Game.Player.Character.Weapons.Current;
+                //Notification.Show(weapon.Model.ToString());
                 weapon.Components[redlaserhash].Active = !weapon.Components[redlaserhash].Active;
+                weapon.Components[redlaserhashREH].Active = !weapon.Components[redlaserhashREH].Active;
+                weapon.Components[PIlaserhashIR].Active = !weapon.Components[PIlaserhashIR].Active;
             }
         }
+        #endregion
     }
 }
