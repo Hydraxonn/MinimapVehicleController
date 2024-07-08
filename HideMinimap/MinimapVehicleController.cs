@@ -4,6 +4,7 @@ using System;
 using Ini;
 using System.Windows.Forms;
 using GTA.UI;
+using GTA.Math;
 namespace MinimapVehicleController
 {
     public class MinimapVehicleControllerMod : Script
@@ -22,7 +23,7 @@ namespace MinimapVehicleController
             right,
             hazard
         };
-        public static Keys CurrentWindowKey,PassengerWindowKey,DriverRearWindowKey,PassengerRearWindowKey,AllWindowsKey,HoodKey,TrunkKey,InteriorLightKey,ToggleRadioWheelKey,ToggleMobileRadioKey,ToggleMinimapKey,OpenDoorKey,SeatbeltKey,ShuffleSeatKey,LeftSignalKey, RightSignalKey, HazardsKey, RedLaserKey, GreenLaserKey;
+        public static Keys CurrentWindowKey,PassengerWindowKey,DriverRearWindowKey,PassengerRearWindowKey,AllWindowsKey,HoodKey,TrunkKey,InteriorLightKey,ToggleRadioWheelKey,ToggleMobileRadioKey,ToggleMinimapKey,OpenDoorKey,SeatbeltKey,ShuffleSeatKey,LeftSignalKey, RightSignalKey, HazardsKey, RedLaserKey, GreenLaserKey, DropWeaponKey;
         private readonly IniFile settingsINI;
         public static bool LightOff = true;
         public static bool MMoriginalEnabled, MMbigMapEnabled, MMzoomoutEnabled, MMfullEnabled, MMhiddenEnabled, enableVehicleControls, enableMinimapControls, enableMobileRadio, enablePhoneColor = true;
@@ -69,7 +70,7 @@ namespace MinimapVehicleController
             if (beltedUp){Function.Call(Hash.DISABLE_CONTROL_ACTION, 0, 75, true);}
             if (radioWheelDisabled){Function.Call(Hash.DISABLE_CONTROL_ACTION, 0, 85, true);}
         }
-        void OnKeyDown(object sender, KeyEventArgs e){
+        void OnKeyDown(object sender, KeyEventArgs e){//ANY TIME
             switch (e.KeyCode){
                 case var value when value == ToggleMobileRadioKey:
                     if (enableMobileRadio) { TogglePlayerMobileRadio(); }
@@ -93,7 +94,21 @@ namespace MinimapVehicleController
                     ToggleLaser(false);
                     break;
             }
-            if (Game.Player.Character.CurrentVehicle != null && enableVehicleControls) {
+            if (Game.Player.Character.CurrentVehicle == null)//WHEN NOT IN CAR
+            {
+                switch (e.KeyCode)
+                {
+                    case var value when value == DropWeaponKey:
+                        if (Game.Player.Character.Weapons.Current != null)
+                        {
+                            Function.Call(Hash.TASK_PLAY_ANIM, Game.Player.Character, "weapons@projectile@", "drop", 2f, -2f, -1, 48, 0, 0, 0, 0);
+                            Function.Call(Hash.SET_PED_DROPS_INVENTORY_WEAPON, Game.Player.Character, Game.Player.Character.Weapons.Current.Hash, 0, 0, 0, 0);
+                            Wait(1500);
+                        }
+                        break;
+                }
+            }
+            if (Game.Player.Character.CurrentVehicle != null && enableVehicleControls) {//WHEN IN CAR
                 switch (e.KeyCode){
                     case var value when value == HazardsKey:
                         ToggleTurnSignals(signalTypes.hazard, Game.Player.Character.CurrentVehicle);
@@ -164,7 +179,7 @@ namespace MinimapVehicleController
             HazardsKey = settingsINI.Read<Keys>("HazardsKey", "KEYBINDS", Keys.None);
             RedLaserKey = settingsINI.Read<Keys>("RedLaserKey", "KEYBINDS", Keys.OemSemicolon);
             GreenLaserKey = settingsINI.Read<Keys>("GreenLaserKey", "KEYBINDS", Keys.OemQuotes);
-
+            DropWeaponKey = settingsINI.Read<Keys>("DropWeaponKey", "KEYBINDS", Keys.L);
         }
         #region MINIMAP FUNCTIONS
         public static void MinimapSafetyCheck(){
