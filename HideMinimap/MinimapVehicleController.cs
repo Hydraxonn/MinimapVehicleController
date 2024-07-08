@@ -4,7 +4,6 @@ using System;
 using Ini;
 using System.Windows.Forms;
 using GTA.UI;
-using GTA.Math;
 namespace MinimapVehicleController
 {
     public class MinimapVehicleControllerMod : Script
@@ -43,6 +42,7 @@ namespace MinimapVehicleController
                 LoadExternalSettings(settingsINI);
                 MinimapSafetyCheck();
                 initialized = true;
+                Function.Call(Hash.REQUEST_ANIM_DICT, "weapons@projectile@");//MUST BE LOADED FIRST FOR WEAPON DROP ANIM TO PLAY
             }
             Tick += OnTick;
             KeyDown += OnKeyDown;
@@ -99,12 +99,7 @@ namespace MinimapVehicleController
                 switch (e.KeyCode)
                 {
                     case var value when value == DropWeaponKey:
-                        if (Game.Player.Character.Weapons.Current != null)
-                        {
-                            Function.Call(Hash.TASK_PLAY_ANIM, Game.Player.Character, "weapons@projectile@", "drop", 2f, -2f, -1, 48, 0, 0, 0, 0);
-                            Function.Call(Hash.SET_PED_DROPS_INVENTORY_WEAPON, Game.Player.Character, Game.Player.Character.Weapons.Current.Hash, 0, 0, 0, 0);
-                            Wait(1500);
-                        }
+                        DropWeapon();
                         break;
                 }
             }
@@ -369,6 +364,7 @@ namespace MinimapVehicleController
             }
         }
         public static void ToggleInteriorLight(Vehicle veh, bool tog){
+            Function.Call(Hash.PLAY_SOUND, -1, "NO", "HUD_FRONTEND_DEFAULT_SOUNDSET");
             Function.Call(Hash.SET_VEHICLE_INTERIORLIGHT, veh, tog);
             LightOff = !LightOff;
         }
@@ -534,7 +530,7 @@ namespace MinimapVehicleController
             }
         }
         #endregion
-        #region LASER FUNCTIONS
+        #region WEAPON FUNCTIONS
         public static void ToggleLaser(bool laserColor)
         {
             if (laserColor)//green
@@ -552,6 +548,16 @@ namespace MinimapVehicleController
                 weapon.Components[redlaserhash].Active = !weapon.Components[redlaserhash].Active;
                 weapon.Components[redlaserhashREH].Active = !weapon.Components[redlaserhashREH].Active;
                 weapon.Components[PIlaserhashIR].Active = !weapon.Components[PIlaserhashIR].Active;
+            }
+        }
+        public static void DropWeapon()
+        {
+            if (Function.Call<bool>(Hash.IS_PED_ARMED, Game.Player.Character, 7)
+                            && !Function.Call<bool>(Hash.IS_ENTITY_PLAYING_ANIM, Game.Player.Character, "weapons@projectile@", "drop", 3)
+                            )
+            {
+                Function.Call(Hash.TASK_PLAY_ANIM, Game.Player.Character, "weapons@projectile@", "drop", 2f, -2f, -1, 48, 0, 0, 0, 0);
+                Function.Call(Hash.SET_PED_DROPS_INVENTORY_WEAPON, Game.Player.Character, Game.Player.Character.Weapons.Current.Hash, 0, 0, 0, 0);
             }
         }
         #endregion
