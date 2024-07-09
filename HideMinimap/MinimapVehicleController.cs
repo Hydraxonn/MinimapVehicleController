@@ -23,12 +23,14 @@ namespace MinimapVehicleController
             hazard
         };
         public static Keys CurrentWindowKey,PassengerWindowKey,DriverRearWindowKey,PassengerRearWindowKey,AllWindowsKey,HoodKey,TrunkKey,InteriorLightKey,ToggleRadioWheelKey,ToggleMobileRadioKey,ToggleMinimapKey,OpenDoorKey,SeatbeltKey,ShuffleSeatKey,LeftSignalKey, RightSignalKey, HazardsKey, RedLaserKey, GreenLaserKey, DropWeaponKey;
+        public static int vehMinimapButton, vehRadioWheelButton, HazardsButton, LeftSignalButton, RightSignalButton, SeatbeltButton, InteriorLightButton, CurrentWindowButton, PassengerWindowButton, DriverRearWindowButton, PassengerRearWindowButton,AllWindowsButton,HoodButton,TrunkButton,OpenDoorButton,ShuffleSeatButton,MinimapButton,MobileRadioButton,RadioWheelButton,RedLaserButton,GreenLaserButton,DropWeaponButton;
         private readonly IniFile settingsINI;
         public static bool LightOff = true;
         public static bool MMoriginalEnabled, MMbigMapEnabled, MMzoomoutEnabled, MMfullEnabled, MMhiddenEnabled, enableVehicleControls, enableMinimapControls, enableMobileRadio, enablePhoneColor = true;
         public static bool leftSignalActive, rightSignalActive, hazardsActive, radioWheelDisabled, mobileRadio, beltedUp, isCurrentlyShuffling, window0down, window1down, window2down, window3down, AWindowDown, hoodOpen, trunkOpen, door0Open, door1Open, door2Open, door3Open, initialized = false;
         public static mapStates mapState = mapStates.original;
         public static int phoneColorIndex, MMsafetyVal = 0;
+        public static int[] ControlsToDisable = {15,47,52,58,85,115,174,261,14,46,54,74,101,103,104,119,175,262,344,355,356,27,42,172,19,20,43,48,173,18,21,70,73,105,114,120,132,136,137,141,154,176,258,264,337,345,353,354,357,45,57,80,140,177,263,23,49,53,56,75,144,145,0,244,28,36,86,113,350,351,352,7,26,29,50,79,93,121};
         //LASER COMPONENT HASHES
         public static WeaponComponentHash laserhash = (WeaponComponentHash)2455710022; //COMPONENT_AT_AR_LASER
         public static WeaponComponentHash redlaserhash = (WeaponComponentHash)1073457922; //COMPONENT_AT_AR_LASER_RED
@@ -69,6 +71,96 @@ namespace MinimapVehicleController
             }
             if (beltedUp){Function.Call(Hash.DISABLE_CONTROL_ACTION, 0, 75, true);}
             if (radioWheelDisabled){Function.Call(Hash.DISABLE_CONTROL_ACTION, 0, 85, true);}
+            //CONTROLLER SUPPORT
+            if (Game.Player.Character.CurrentVehicle != null && enableVehicleControls && !Function.Call<bool>(Hash.IS_USING_KEYBOARD_AND_MOUSE, 0)){//if In car, car controls enabled AND using controller
+                if (Function.Call<bool>(Hash.IS_CONTROL_PRESSED,2, 203))//if holding X on controller
+                {
+                    DisableFuckingEverything();
+
+                    if (Function.Call<bool>(Hash.IS_CONTROL_JUST_PRESSED, 2, AllWindowsButton))
+                    {
+                        ToggleAllWindows(Game.Player.Character.CurrentVehicle);
+                    }
+                    else if (Function.Call<bool>(Hash.IS_CONTROL_JUST_PRESSED, 2, InteriorLightButton))
+                    {
+                        ToggleInteriorLight(Game.Player.Character.CurrentVehicle, LightOff);
+                    }
+                    else if (Function.Call<bool>(Hash.IS_CONTROL_JUST_PRESSED, 2, CurrentWindowButton))
+                    {
+                        ToggleCurrentWindow(Game.Player.Character.CurrentVehicle);
+                    }
+                    else if (Function.Call<bool>(Hash.IS_CONTROL_JUST_PRESSED, 2, PassengerWindowButton))
+                    {
+                        DriverWindowAccess(Game.Player.Character.CurrentVehicle, 1);
+                    }
+                    else if (Function.Call<bool>(Hash.IS_CONTROL_JUST_PRESSED, 2, SeatbeltButton))
+                    {
+                        TogglePlayerSeatbelt(Game.Player.Character.CurrentVehicle);
+                    }
+                    else if (Function.Call<bool>(Hash.IS_CONTROL_JUST_PRESSED, 2, TrunkButton))
+                    {
+                        ToggleTrunk(Game.Player.Character.CurrentVehicle);
+                    }
+                    else if (Function.Call<bool>(Hash.IS_CONTROL_JUST_PRESSED, 2, HoodButton))
+                    {
+                        ToggleHood(Game.Player.Character.CurrentVehicle);
+                    }
+                    else if (Function.Call<bool>(Hash.IS_CONTROL_JUST_PRESSED, 2, vehMinimapButton))
+                    {
+                        if (enableMinimapControls && MMsafetyVal > 1) { CycleMinimapState(); }
+                    }
+                    else if (Function.Call<bool>(Hash.IS_CONTROL_JUST_PRESSED, 2, OpenDoorButton))
+                    {
+                        OpenLocalDoor(Game.Player.Character.CurrentVehicle);
+                    }
+                    else if (Function.Call<bool>(Hash.IS_CONTROL_JUST_PRESSED, 2, ShuffleSeatButton))
+                    {
+                        ShuffleToNextSeat(Game.Player.Character.CurrentVehicle);
+                    }
+                    else if (Function.Call<bool>(Hash.IS_CONTROL_JUST_PRESSED, 2, DriverRearWindowButton))
+                    {
+                        DriverWindowAccess(Game.Player.Character.CurrentVehicle, 2);
+                    }
+                    else if (Function.Call<bool>(Hash.IS_CONTROL_JUST_PRESSED, 2, PassengerRearWindowButton))
+                    {
+                        DriverWindowAccess(Game.Player.Character.CurrentVehicle, 3);
+                    }
+                    else if (Function.Call<bool>(Hash.IS_CONTROL_JUST_PRESSED, 2, vehRadioWheelButton))
+                    {
+                        if (enableMobileRadio) { ToggleRadioWheel(); }
+                    }
+
+                }
+            } else if (!Function.Call<bool>(Hash.IS_USING_KEYBOARD_AND_MOUSE, 0))//Player is on foot
+            {
+                if (Function.Call<bool>(Hash.IS_CONTROL_PRESSED, 2, 205))//if holding LB on controller
+                {
+                    if (Function.Call<bool>(Hash.IS_CONTROL_JUST_PRESSED, 2, MinimapButton))
+                    {
+                        if (enableMinimapControls && MMsafetyVal > 1) { CycleMinimapState(); }
+                    }
+                    else if (Function.Call<bool>(Hash.IS_CONTROL_JUST_PRESSED, 2, MobileRadioButton))
+                    {
+                        if (enableMobileRadio) { TogglePlayerMobileRadio(); }
+                    }
+                    else if (Function.Call<bool>(Hash.IS_CONTROL_JUST_PRESSED, 2, RadioWheelButton))
+                    {
+                        if (enableMobileRadio) { ToggleRadioWheel(); }
+                    }
+                    else if (Function.Call<bool>(Hash.IS_CONTROL_JUST_PRESSED, 2, RedLaserButton))
+                    {
+                        ToggleLaser(true);
+                    }
+                    else if (Function.Call<bool>(Hash.IS_CONTROL_JUST_PRESSED, 2, GreenLaserButton))
+                    {
+                        ToggleLaser(false);
+                    }
+                    else if (Function.Call<bool>(Hash.IS_CONTROL_JUST_PRESSED, 2, DropWeaponButton))
+                    {
+                        DropWeapon();
+                    }
+                }
+            }
         }
         void OnKeyDown(object sender, KeyEventArgs e){//ANY TIME
             switch (e.KeyCode){
@@ -80,12 +172,6 @@ namespace MinimapVehicleController
                     break;
                 case var value when value == ToggleMinimapKey:
                     if (enableMinimapControls && MMsafetyVal > 1) { CycleMinimapState(); }
-                    break;
-                case var value when value == OpenDoorKey:
-                    if (enableVehicleControls) { OpenLocalDoor(Game.Player.Character.CurrentVehicle); }
-                    break;
-                case var value when value == ShuffleSeatKey:
-                    if (enableVehicleControls) { ShuffleToNextSeat(Game.Player.Character.CurrentVehicle); }
                     break;
                 case var value when value == RedLaserKey:
                     ToggleLaser(true);
@@ -141,6 +227,12 @@ namespace MinimapVehicleController
                     case var value when value == TrunkKey:
                         ToggleTrunk(Game.Player.Character.CurrentVehicle);
                         break;
+                    case var value when value == OpenDoorKey:
+                         OpenLocalDoor(Game.Player.Character.CurrentVehicle); 
+                        break;
+                    case var value when value == ShuffleSeatKey:
+                        ShuffleToNextSeat(Game.Player.Character.CurrentVehicle); 
+                        break;
                 }
             }
         }
@@ -175,6 +267,28 @@ namespace MinimapVehicleController
             RedLaserKey = settingsINI.Read<Keys>("RedLaserKey", "KEYBINDS", Keys.OemSemicolon);
             GreenLaserKey = settingsINI.Read<Keys>("GreenLaserKey", "KEYBINDS", Keys.OemQuotes);
             DropWeaponKey = settingsINI.Read<Keys>("DropWeaponKey", "KEYBINDS", Keys.L);
+            vehMinimapButton = settingsINI.Read<int>("vehMinimapButton", "CONTROLLER_VEHICLE", 217);//BACK BY DEFAULT
+            vehRadioWheelButton = settingsINI.Read<int>("vehRadioWheelButton", "CONTROLLER_VEHICLE", 9999);//NONE BY DEFAULT
+            HazardsButton = settingsINI.Read<int>("HazardsButton", "CONTROLLER_VEHICLE", 9999);//NONE BY DEFAULT
+            LeftSignalButton = settingsINI.Read<int>("LeftSignalButton", "CONTROLLER_VEHICLE", 9999);//NONE BY DEFAULT
+            RightSignalButton = settingsINI.Read<int>("RightSignalButton", "CONTROLLER_VEHICLE", 9999);//NONE BY DEFAULT
+            SeatbeltButton = settingsINI.Read<int>("SeatbeltButton", "CONTROLLER_VEHICLE", 191);//A BY DEFAULT
+            InteriorLightButton = settingsINI.Read<int>("InteriorLightButton", "CONTROLLER_VEHICLE", 188);//DPAD UP BY DEFAULT
+            CurrentWindowButton = settingsINI.Read<int>("CurrentWindowButton", "CONTROLLER_VEHICLE", 189);//DPAD LEFT BY DEFAULT
+            PassengerWindowButton = settingsINI.Read<int>("PassengerWindowButton", "CONTROLLER_VEHICLE", 190);//DPAD RIGHT BY DEFAULT
+            DriverRearWindowButton = settingsINI.Read<int>("DriverRearWindowButton", "CONTROLLER_VEHICLE", 9999);//NONE BY DEFAULT
+            PassengerRearWindowButton = settingsINI.Read<int>("PassengerRearWindowButton", "CONTROLLER_VEHICLE", 9999);//NONE BY DEFAULT
+            AllWindowsButton = settingsINI.Read<int>("AllWindowsButton", "CONTROLLER_VEHICLE", 187);//DPAD DOWN BY DEFAULT
+            HoodButton = settingsINI.Read<int>("HoodButton", "CONTROLLER_VEHICLE", 192);//Y BY DEFAULT
+            TrunkButton = settingsINI.Read<int>("TrunkButton", "CONTROLLER_VEHICLE", 194);//B BY DEFAULT
+            OpenDoorButton = settingsINI.Read<int>("OpenDoorButton", "CONTROLLER_VEHICLE", 209);//L3 BY DEFAULT
+            ShuffleSeatButton = settingsINI.Read<int>("ShuffleSeatButton", "CONTROLLER_VEHICLE", 210);//R3 BY DEFAULT
+            MinimapButton = settingsINI.Read<int>("MinimapButton", "CONTROLLER_ON_FOOT", 217);//BACK BY DEFAULT
+            MobileRadioButton = settingsINI.Read<int>("MobileRadioButton", "CONTROLLER_ON_FOOT", 189);//DPAD LEFT BY DEFAULT
+            RadioWheelButton = settingsINI.Read<int>("RadioWheelButton", "CONTROLLER_ON_FOOT", 190);//DPAD RIGHT BY DEFAULT
+            RedLaserButton = settingsINI.Read<int>("RedLaserButton", "CONTROLLER_ON_FOOT", 191);//A BY DEFAULT
+            GreenLaserButton = settingsINI.Read<int>("GreenLaserButton", "CONTROLLER_ON_FOOT", 194);//B BY DEFAULT
+            DropWeaponButton = settingsINI.Read<int>("DropWeaponButton", "CONTROLLER_ON_FOOT", 203);//X BY DEFAULT
         }
         #region MINIMAP FUNCTIONS
         public static void MinimapSafetyCheck(){
@@ -561,5 +675,12 @@ namespace MinimapVehicleController
             }
         }
         #endregion
+        public static void DisableFuckingEverything()
+        {
+            for (int i = 0; i < ControlsToDisable.Length; i++)
+            {
+                Function.Call(Hash.DISABLE_CONTROL_ACTION, 0, ControlsToDisable[i], 0);
+            }
+        }
     }
 }
